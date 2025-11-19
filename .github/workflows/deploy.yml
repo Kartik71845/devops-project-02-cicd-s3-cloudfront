@@ -2,13 +2,13 @@ name: Deploy Static Website (S3 + CloudFront)
 
 on:
   push:
-    branches: [ "main" ] # Runs on push to the 'main' branch
+    branches: [ "main" ] # Trigger the workflow on push to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
-    # Define environment variables used throughout the job
+    # Define environment variables for cleaner syntax
     env:
       S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
       CF_DISTRIBUTION: ${{ secrets.CF_DISTRIBUTION_ID }}
@@ -19,42 +19,35 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Configure AWS Credentials using OIDC (Recommended) or Keys
-      # This action automatically sets up the environment and installs the AWS CLI.
+      # Step 2: Configure AWS Credentials
+      # This action automatically sets up the environment and makes 'aws' commands available.
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-          # If using OIDC/IAM Role, remove the two secret lines above 
-          # and use role-to-assume instead:
-          # role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }} 
 
-      # Step 3: Prepare Files (Optional: Create the deploy directory and copy files)
+      # Step 3: Prepare Files
       - name: Prepare Deployment Directory
         run: |
           echo "Preparing files for deployment..."
+          # Create the deploy directory
           mkdir -p deploy/
           # Copy your essential files into the 'deploy' directory
-          # Ensure these files exist in the root of your repository
+          # Note: If a file is missing, the workflow will fail here (recommended).
           cp index.html deploy/
           cp styles.css deploy/
           cp script.js deploy/
-          # List the files to confirm they are present
           ls -la deploy
+          echo "Files ready for sync."
 
       # Step 4: Sync website files to S3
+      # FIXED: Using a single-line command to avoid the 'command not found' shell error.
       - name: Sync Website Files to S3 Bucket
-        run: |
-          aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
-          echo "S3 sync complete for bucket ${{ env.S3_BUCKET }}"
-
+        run: aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
+        
       # Step 5: Invalidate CloudFront Cache
-      # This forces CloudFront to fetch the new files from S3 immediately.
+      # This step forces CloudFront to fetch the new content from S3 immediately.
       - name: Invalidate CloudFront Cache
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ env.CF_DISTRIBUTION }} \
-            --paths "/*"
-          echo "CloudFront invalidation requested for distribution ${{ env.CF_DISTRIBUTION }}"
+        run: aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION }} --paths "/*"
