@@ -2,13 +2,12 @@ name: Deploy Static Website (S3 + CloudFront)
 
 on:
   push:
-    branches: [ "main" ] # Trigger the workflow on push to the main branch
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
-    # Define environment variables for cleaner syntax
     env:
       S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
       CF_DISTRIBUTION: ${{ secrets.CF_DISTRIBUTION_ID }}
@@ -20,7 +19,6 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Configure AWS Credentials
-      # This action automatically sets up the environment and makes 'aws' commands available.
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -32,22 +30,22 @@ jobs:
       - name: Prepare Deployment Directory
         run: |
           echo "Preparing files for deployment..."
-          # Create the deploy directory
           mkdir -p deploy/
-          # Copy your essential files into the 'deploy' directory
-          # Note: If a file is missing, the workflow will fail here (recommended).
           cp index.html deploy/
           cp styles.css deploy/
           cp script.js deploy/
           ls -la deploy
           echo "Files ready for sync."
 
-      # Step 4: Sync website files to S3
-      # FIXED: Using a single-line command to avoid the 'command not found' shell error.
+      # Step 4: Sync website files to S3 (USING THE DEDICATED AWS CLI ACTION)
+      # This replaces the problematic 'run: aws s3 sync...' block.
       - name: Sync Website Files to S3 Bucket
-        run: aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
+        uses: aws-actions/aws-cli@v0.1.0 # Use the dedicated action
+        with:
+          # Note: The 'aws' prefix is omitted here.
+          cmd: s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
         
       # Step 5: Invalidate CloudFront Cache
-      # This step forces CloudFront to fetch the new content from S3 immediately.
+      # Using the 'run:' block is generally fine for single commands like this.
       - name: Invalidate CloudFront Cache
         run: aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION }} --paths "/*"
