@@ -38,7 +38,10 @@ jobs:
         ls -la deploy
 
     - name: Sync website files to S3
-      run: aws s3 sync deploy/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+      run: |
+        echo "COMMAND RUNNING:"
+        echo "aws s3 sync deploy/ s3://${{ secrets.S3_BUCKET_NAME }} --delete"
+        aws s3 sync deploy/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
 
     - name: Invalidate CloudFront Cache
