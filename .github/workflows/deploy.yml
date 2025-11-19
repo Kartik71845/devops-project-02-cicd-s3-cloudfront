@@ -26,25 +26,27 @@ jobs:
         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
         unzip awscliv2.zip
         sudo ./aws/install --update
-        aws --version
 
-    - name: Prepare clean deploy directory
+    - name: Prepare deploy folder
       run: |
         rm -rf deploy
         mkdir deploy
-        cp index.html deploy/ || true
-        cp styles.css deploy/ || true
-        cp script.js deploy/ || true
+        cp index.html deploy/
+        cp styles.css deploy/
+        cp script.js deploy/
         ls -la deploy
 
-    # FINAL WORKING SYNC - No delete flag! No wrapping! Always works!
-    - name: Upload website files to S3 (error-proof)
+    - name: Create upload script
       run: |
-        aws s3 cp deploy/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html
-        aws s3 cp deploy/styles.css s3://${{ secrets.S3_BUCKET_NAME }}/styles.css
-        aws s3 cp deploy/script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
+        echo '#!/bin/bash' > upload.sh
+        echo "aws s3 cp deploy/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html" >> upload.sh
+        echo "aws s3 cp deploy/styles.css s3://${{ secrets.S3_BUCKET_NAME }}/styles.css" >> upload.sh
+        echo "aws s3 cp deploy/script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js" >> upload.sh
+        chmod +x upload.sh
 
-    # CloudFront Invalidation
+    - name: Run upload script (safe)
+      run: ./upload.sh
+
     - name: Invalidate CloudFront Cache
       run: |
         aws cloudfront create-invalidation \
