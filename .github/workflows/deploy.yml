@@ -29,23 +29,21 @@ jobs:
 
     - name: Prepare deploy folder
       run: |
-        rm -rf deploy
-        mkdir deploy
+        mkdir -p deploy
         cp index.html deploy/
         cp styles.css deploy/
         cp script.js deploy/
         ls -la deploy
 
-    - name: Create upload script
+    - name: Upload files to S3 (unbreakable version)
+      env:
+        BUCKET: ${{ secrets.S3_BUCKET_NAME }}
       run: |
-        echo '#!/bin/bash' > upload.sh
-        echo "aws s3 cp deploy/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html" >> upload.sh
-        echo "aws s3 cp deploy/styles.css s3://${{ secrets.S3_BUCKET_NAME }}/styles.css" >> upload.sh
-        echo "aws s3 cp deploy/script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js" >> upload.sh
-        chmod +x upload.sh
-
-    - name: Run upload script (safe)
-      run: ./upload.sh
+        for file in index.html styles.css script.js
+        do
+          echo "Uploading $file ..."
+          aws s3 cp deploy/$file s3://$BUCKET/$file
+        done
 
     - name: Invalidate CloudFront Cache
       run: |
