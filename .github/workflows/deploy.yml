@@ -35,8 +35,6 @@ jobs:
         cp index.html deploy/ || true
         cp styles.css deploy/ || true
         cp script.js deploy/ || true
-        # If you have images or other folders, copy them manually:
-        # cp -r assets deploy/ || true
         ls -la deploy
 
     - name: Sync website files to S3
