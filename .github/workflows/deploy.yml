@@ -1,51 +1,60 @@
-name: Deploy Website (S3 + CloudFront)
+name: Deploy Static Website (S3 + CloudFront)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ] # Runs on push to the 'main' branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    # Define environment variables used throughout the job
+    env:
+      S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
+      CF_DISTRIBUTION: ${{ secrets.CF_DISTRIBUTION_ID }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      # Step 1: Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      # Step 2: Configure AWS Credentials using OIDC (Recommended) or Keys
+      # This action automatically sets up the environment and installs the AWS CLI.
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          # If using OIDC/IAM Role, remove the two secret lines above 
+          # and use role-to-assume instead:
+          # role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }} 
 
-    - name: Install AWS CLI v2
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install --update
-        aws --version
+      # Step 3: Prepare Files (Optional: Create the deploy directory and copy files)
+      - name: Prepare Deployment Directory
+        run: |
+          echo "Preparing files for deployment..."
+          mkdir -p deploy/
+          # Copy your essential files into the 'deploy' directory
+          # Ensure these files exist in the root of your repository
+          cp index.html deploy/
+          cp styles.css deploy/
+          cp script.js deploy/
+          # List the files to confirm they are present
+          ls -la deploy
 
-    - name: Prepare clean deploy directory
-      run: |
-        rm -rf deploy
-        mkdir deploy
-        cp index.html deploy/ || true
-        cp styles.css deploy/ || true
-        cp script.js deploy/ || true
-        ls -la deploy
+      # Step 4: Sync website files to S3
+      - name: Sync Website Files to S3 Bucket
+        run: |
+          aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
+          echo "S3 sync complete for bucket ${{ env.S3_BUCKET }}"
 
-    - name: Sync website files to S3
-      run: |
-        echo "COMMAND RUNNING:"
-        echo "aws s3 sync deploy/ s3://${{ secrets.S3_BUCKET_NAME }} --delete"
-        aws s3 sync deploy/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
-
-
-    - name: Invalidate CloudFront Cache
-      run: |
-        aws cloudfront create-invalidation \
-          --distribution-id ${{ secrets.CF_DISTRIBUTION_ID }} \
-          --paths "/*"
+      # Step 5: Invalidate CloudFront Cache
+      # This forces CloudFront to fetch the new files from S3 immediately.
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CF_DISTRIBUTION }} \
+            --paths "/*"
+          echo "CloudFront invalidation requested for distribution ${{ env.CF_DISTRIBUTION }}"
