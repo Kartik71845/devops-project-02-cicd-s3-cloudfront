@@ -1,4 +1,4 @@
-name: Deploy Static Website (S3 + CloudFront)
+name: Deploy Static Website
 
 on:
   push:
@@ -7,18 +7,24 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+    defaults:
+      run:
+        shell: bash
+
+    # ------------------------------------------------------------------
+    # ENV VARIABLES: Defined here to avoid typo issues in the steps
+    # ------------------------------------------------------------------
     env:
       S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
       CF_DISTRIBUTION: ${{ secrets.CF_DISTRIBUTION_ID }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
-      # Step 1: Checkout Repository
+      # 1. Checkout the code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Configure AWS Credentials
+      # 2. Set up AWS environment
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -26,17 +32,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Step 3: Prepare Files
+      # 3. SAFETY CHECK: Verify AWS CLI is accessible
+      # If this step passes, we know 'aws' is in the path and working.
+      - name: Verify AWS CLI
+        run: aws --version
+
+      # 4. Prepare the files
       - name: Prepare Deployment Directory
         run: |
-          mkdir -p deploy/
+          mkdir -p deploy
           cp index.html deploy/
           cp styles.css deploy/
           cp script.js deploy/
           ls -la deploy
 
-      # Step 4: Sync website files to S3 (CRITICAL FIX: SINGLE LINE)
-      - name: Sync Website Files to S3 Bucket
-        run: aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} && --delete
-        
-     
+      # 5. SYNC TO S3 (THE FIX)
+      # We run this as a strictly single-line command.
+      # We added '--region' to be explicit.
+      - name: Sync to S3
+        run: aws s3 sync ./deploy s3://${{ env.S3_BUCKET }} --delete --region ${{ env.AWS_REGION }}
+
+      # 6. INVALIDATE CLOUDFRONT
+      # Strictly single-line command.
+      - name: Invalidate CloudFront
+        run: aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION }} --paths "/*" --region ${{ env.AWS_REGION }}
