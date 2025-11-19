@@ -18,7 +18,7 @@ jobs:
       - name: Upload files to S3
         run: |
           echo "Starting upload to S3..."
-          aws s3 sync . s3://${{ secrets.S3_BUCKET }} \
+          aws s3 sync . s3://${{ secrets.S3_BUCKET_NAME }} \
             --delete \
             --exact-timestamps
           echo "Upload finished!"
