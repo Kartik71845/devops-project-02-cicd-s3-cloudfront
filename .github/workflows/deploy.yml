@@ -1,4 +1,4 @@
-name: Deploy to S3 and Invalidate CloudFront
+name: Deploy Website (S3 + CloudFront)
 
 on:
   push:
@@ -28,14 +28,20 @@ jobs:
         sudo ./aws/install --update
         aws --version
 
+    - name: Prepare clean deploy directory
+      run: |
+        rm -rf deploy
+        mkdir deploy
+        cp index.html deploy/ || true
+        cp styles.css deploy/ || true
+        cp script.js deploy/ || true
+        # If you have images or other folders, copy them manually:
+        # cp -r assets deploy/ || true
+        ls -la deploy
+
     - name: Sync website files to S3
       run: |
-        aws s3 sync ./ s3://${{ secrets.S3_BUCKET_NAME }} \
-          --delete \
-          --exclude ".git/*" \
-          --exclude ".github/*" \
-          --exclude "awscliv2.zip" \
-          --exclude "aws/*"
+        aws s3 sync deploy/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
     - name: Invalidate CloudFront Cache
       run: |
