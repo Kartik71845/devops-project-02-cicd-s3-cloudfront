@@ -29,23 +29,16 @@ jobs:
       # Step 3: Prepare Files
       - name: Prepare Deployment Directory
         run: |
-          echo "Preparing files for deployment..."
           mkdir -p deploy/
           cp index.html deploy/
           cp styles.css deploy/
           cp script.js deploy/
           ls -la deploy
-          echo "Files ready for sync."
 
-      # Step 4: Sync website files to S3 (USING THE DEDICATED AWS CLI ACTION)
-      # This replaces the problematic 'run: aws s3 sync...' block.
+      # Step 4: Sync website files to S3 (CRITICAL FIX: SINGLE LINE)
       - name: Sync Website Files to S3 Bucket
-        uses: aws-actions/aws-cli@v0.1.0 # Use the dedicated action
-        with:
-          # Note: The 'aws' prefix is omitted here.
-          cmd: s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
+        run: aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
         
-      # Step 5: Invalidate CloudFront Cache
-      # Using the 'run:' block is generally fine for single commands like this.
+      # Step 5: Invalidate CloudFront Cache (CRITICAL FIX: SINGLE LINE)
       - name: Invalidate CloudFront Cache
         run: aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION }} --paths "/*"
