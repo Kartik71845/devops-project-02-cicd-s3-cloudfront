@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Project 02</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="content">
+        <h1>DevOps Project 02 — CI/CD Deployment</h1>
+        <h2>GitHub Actions → AWS S3 → CloudFront</h2>
+        <p>
+            This website is deployed automatically using a **CI/CD pipeline**. 
+            Each push to **GitHub** triggers a workflow that uploads the latest files 
+            to an **S3 bucket** and invalidates the **CloudFront** cache.
+        </p>
+    </main>
+
+    <footer>
+        <p>Hosted via AWS S3 + CloudFront | Automated via GitHub Actions</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

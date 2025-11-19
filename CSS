@@ -1,0 +1,90 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: white;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Ensure footer stays at the bottom */
+}
+
+header {
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+}
+
+nav ul li {
+    display: inline;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #333;
+    padding: 10px 15px;
+    font-weight: bold;
+}
+
+nav ul li a:hover {
+    color: #007bff;
+}
+
+.content {
+    flex-grow: 1; /* Allow content to push the footer down */
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2em;
+    margin-bottom: 0.5em;
+    color: #2c3e50;
+}
+
+h2 {
+    font-size: 1.2em;
+    color: #3498db;
+    margin-bottom: 1.5em;
+}
+
+p {
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto 20px auto; /* Center paragraph text */
+    text-align: justify; /* Keeps it neat, but center if preferred */
+    text-align: center;
+}
+
+footer {
+    padding: 15px;
+    text-align: center;
+    font-size: 0.8em;
+    color: #7f8c8d;
+    border-top: 1px solid #eee;
+    background-color: #f8f8f8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .content {
+        margin: 20px;
+        padding: 10px;
+    }
+    h1 {
+        font-size: 1.5em;
+    }
+    h2 {
+        font-size: 1em;
+    }
+}
