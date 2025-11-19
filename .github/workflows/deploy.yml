@@ -1,58 +1,33 @@
-name: Deploy Static Website
+name: Deploy Static Site to S3
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main  # Only run when you push to main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-
-    # ------------------------------------------------------------------
-    # ENV VARIABLES: Defined here to avoid typo issues in the steps
-    # ------------------------------------------------------------------
-    env:
-      S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
-      CF_DISTRIBUTION: ${{ secrets.CF_DISTRIBUTION_ID }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
-      # 1. Checkout the code
-      - name: Checkout Repository
+      # Step 1: Get the latest code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up AWS environment
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      # 3. SAFETY CHECK: Verify AWS CLI is accessible
-      # If this step passes, we know 'aws' is in the path and working.
-      - name: Verify AWS CLI
-        run: aws --version
-
-      # 4. Prepare the files
-      - name: Prepare Deployment Directory
+      # Step 2: Upload files to S3
+      - name: Upload files to S3
         run: |
-          mkdir -p deploy
-          cp index.html deploy/
-          cp styles.css deploy/
-          cp script.js deploy/
-          ls -la deploy
-
-      # 5. SYNC TO S3 (THE FIX)
-      # We run this as a strictly single-line command.
-      # We added '--region' to be explicit.
-      - name: Sync to S3
-        run: aws s3 sync ./deploy s3://${{ env.S3_BUCKET }} --delete --region ${{ env.AWS_REGION }}
+          echo "Starting upload to S3..."
+          aws s3 sync . s3://${{ secrets.S3_BUCKET }} \
+            --delete \
+            --exact-timestamps
+          echo "Upload finished!"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
 
       # 6. INVALIDATE CLOUDFRONT
       # Strictly single-line command.
-      - name: Invalidate CloudFront
-        run: aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION }} --paths "/*" --region ${{ env.AWS_REGION }}
+    #  - name: Invalidate CloudFront
+     #   run: aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION }} --paths "/*" --region ${{ env.AWS_REGION }}
