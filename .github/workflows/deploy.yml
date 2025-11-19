@@ -36,9 +36,7 @@ jobs:
           ls -la deploy
 
       # Step 4: Sync website files to S3 (CRITICAL FIX: SINGLE LINE)
-      - name: Sync Website Files to S3 Bucket
-        run: aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
+     # - name: Sync Website Files to S3 Bucket
+      #  run: aws s3 sync deploy/ s3://${{ env.S3_BUCKET }} --delete
         
-      # Step 5: Invalidate CloudFront Cache (CRITICAL FIX: SINGLE LINE)
-      - name: Invalidate CloudFront Cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION }} --paths "/*"
+     
