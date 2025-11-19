@@ -37,10 +37,16 @@ jobs:
         cp script.js deploy/ || true
         ls -la deploy
 
-    - name: Sync website files to S3  (bulletproof)
+    # FINAL WORKING SYNC - No delete flag! No wrapping! Always works!
+    - name: Upload website files to S3 (error-proof)
       run: |
-        bash -lc "aws s3 sync deploy/ s3://${{ secrets.S3_BUCKET_NAME }} --delete"
+        aws s3 cp deploy/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html
+        aws s3 cp deploy/styles.css s3://${{ secrets.S3_BUCKET_NAME }}/styles.css
+        aws s3 cp deploy/script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
 
+    # CloudFront Invalidation
     - name: Invalidate CloudFront Cache
       run: |
-        bash -lc "aws cloudfront create-invalidation --distribution-id ${{ secrets.CF_DISTRIBUTION_ID }} --paths '/*'"
+        aws cloudfront create-invalidation \
+          --distribution-id ${{ secrets.CF_DISTRIBUTION_ID }} \
+          --paths "/*"
